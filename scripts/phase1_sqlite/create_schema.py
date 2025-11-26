@@ -1,27 +1,32 @@
 import sqlite3
 import os
 
-# Chemin vers la base de données (à la racine du dossier data)
+# Chemin vers la base de données
 DB_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'data', 'imdb.db')
 
 def create_schema():
+    # Si la base existe déjà, on la supprime pour repartir propre avec le nouveau schéma étendu
+    if os.path.exists(DB_PATH):
+        os.remove(DB_PATH)
+        print(f"🗑️ Ancienne base supprimée : {DB_PATH}")
+
     print(f"Création de la base de données dans : {DB_PATH}")
-    
-    # Connexion (crée le fichier s'il n'existe pas)
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
-
-    # Activation des clés étrangères (important pour SQLite)
     cursor.execute("PRAGMA foreign_keys = ON;")
 
     # --- 1. Tables Principales ---
 
-    # Table MOVIES
+    # Table MOVIES (Étendue avec original_title, is_adult, etc.)
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS movies (
         movie_id TEXT PRIMARY KEY,
-        title TEXT NOT NULL,
+        title_type TEXT,
+        title TEXT,
+        original_title TEXT,
+        is_adult INTEGER,
         year INTEGER,
+        end_year INTEGER,
         runtime INTEGER
     );
     """)
@@ -30,13 +35,13 @@ def create_schema():
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS persons (
         person_id TEXT PRIMARY KEY,
-        name TEXT NOT NULL,
+        name TEXT,
         birth_year INTEGER,
         death_year INTEGER
     );
     """)
 
-    # --- 2. Tables de Détails (Relations 1-1 ou 1-N simples) ---
+    # --- 2. Tables de Détails ---
 
     # Table RATINGS
     cursor.execute("""
@@ -48,14 +53,18 @@ def create_schema():
     );
     """)
 
-    # Table TITLES (Titres alternatifs)
+    # Table TITLES (Étendue avec ordering, types, attributes...)
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS titles (
         title_id INTEGER PRIMARY KEY AUTOINCREMENT,
         movie_id TEXT,
+        ordering INTEGER,
         title TEXT,
         region TEXT,
         language TEXT,
+        types TEXT,
+        attributes TEXT,
+        is_original_title INTEGER,
         FOREIGN KEY (movie_id) REFERENCES movies(movie_id)
     );
     """)
@@ -70,24 +79,23 @@ def create_schema():
     );
     """)
 
-    # --- 3. Tables de Relations (Many-to-Many) ---
+    # --- 3. Tables de Relations (Casting & Crew) ---
 
-    # Table PRINCIPALS (Casting principal)
+    # Table PRINCIPALS
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS principals (
         movie_id TEXT,
+        ordering INTEGER,
         person_id TEXT,
         category TEXT,
         job TEXT,
-        ordering INTEGER,
-        PRIMARY KEY (movie_id, person_id, category),
+        PRIMARY KEY (movie_id, person_id, category, ordering),
         FOREIGN KEY (movie_id) REFERENCES movies(movie_id),
         FOREIGN KEY (person_id) REFERENCES persons(person_id)
     );
     """)
 
-    # Table CHARACTERS (Rôles joués)
-    # Note : Souvent lié à principals, mais les CSV séparent parfois ces données
+    # Table CHARACTERS
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS characters (
         movie_id TEXT,
@@ -120,11 +128,30 @@ def create_schema():
     );
     """)
 
+    # --- 4. Nouvelles Tables découvertes ---
+
+    # Table PROFESSIONS (jobs des personnes)
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS professions (
+        person_id TEXT,
+        job_name TEXT,
+        FOREIGN KEY (person_id) REFERENCES persons(person_id)
+    );
+    """)
+
+    # Table KNOWN_FOR_MOVIES (films pour lesquels une personne est connue)
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS known_for_movies (
+        person_id TEXT,
+        movie_id TEXT,
+        FOREIGN KEY (person_id) REFERENCES persons(person_id),
+        FOREIGN KEY (movie_id) REFERENCES movies(movie_id)
+    );
+    """)
+
     conn.commit()
     conn.close()
-    print("✅ Schéma créé avec succès !")
+    print("✅ Nouveau schéma COMPLET créé avec succès !")
 
 if __name__ == "__main__":
-    # S'assurer que le dossier data existe
-    os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
     create_schema()
