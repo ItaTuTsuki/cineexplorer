@@ -1,0 +1,19 @@
+# Python & Venv
+__pycache__/
+*.pyc
+venv/
+.env
+
+# Données (Ne jamais envoyer sur GitHub !)
+data/csv/*.csv
+data/csv/*.zip
+data/imdb.db
+data/mongo/
+
+# Fichiers système
+.DS_Store
+.vscode/
+.idea/
+
+# Jupyter
+.ipynb_checkpoints/
