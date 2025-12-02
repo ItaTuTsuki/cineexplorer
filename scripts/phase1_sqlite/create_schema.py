@@ -5,10 +5,14 @@ import os
 DB_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'data', 'imdb.db')
 
 def create_schema():
-    # Si la base existe déjà, on la supprime pour repartir propre avec le nouveau schéma étendu
+    # Suppression de l'ancienne base pour repartir proprement
     if os.path.exists(DB_PATH):
-        os.remove(DB_PATH)
-        print(f"🗑️ Ancienne base supprimée : {DB_PATH}")
+        try:
+            os.remove(DB_PATH)
+            print(f"🗑️ Ancienne base supprimée : {DB_PATH}")
+        except PermissionError:
+            print(f"❌ Impossible de supprimer {DB_PATH}. Fermez toute connexion active.")
+            return
 
     print(f"Création de la base de données dans : {DB_PATH}")
     conn = sqlite3.connect(DB_PATH)
@@ -17,16 +21,13 @@ def create_schema():
 
     # --- 1. Tables Principales ---
 
-    # Table MOVIES (Étendue avec original_title, is_adult, etc.)
+    # Table MOVIES
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS movies (
         movie_id TEXT PRIMARY KEY,
-        title_type TEXT,
         title TEXT,
         original_title TEXT,
-        is_adult INTEGER,
         year INTEGER,
-        end_year INTEGER,
         runtime INTEGER
     );
     """)
@@ -43,7 +44,7 @@ def create_schema():
 
     # --- 2. Tables de Détails ---
 
-    # Table RATINGS
+    # Table RATINGS (1-1 avec movies, donc movie_id est PK)
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS ratings (
         movie_id TEXT PRIMARY KEY,
@@ -53,7 +54,7 @@ def create_schema():
     );
     """)
 
-    # Table TITLES (Étendue avec ordering, types, attributes...)
+    # Table TITLES (PK auto-incrémentée car un film a plusieurs titres)
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS titles (
         title_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -69,7 +70,7 @@ def create_schema():
     );
     """)
 
-    # Table GENRES
+    # Table GENRES (PK Composite)
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS genres (
         movie_id TEXT,
@@ -81,7 +82,7 @@ def create_schema():
 
     # --- 3. Tables de Relations (Casting & Crew) ---
 
-    # Table PRINCIPALS
+    # Table PRINCIPALS (PK Composite complexe)
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS principals (
         movie_id TEXT,
@@ -95,18 +96,19 @@ def create_schema():
     );
     """)
 
-    # Table CHARACTERS
+    # Table CHARACTERS (PK Composite : Film + Acteur + Rôle)
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS characters (
         movie_id TEXT,
         person_id TEXT,
         character_name TEXT,
+        PRIMARY KEY (movie_id, person_id, character_name),
         FOREIGN KEY (movie_id) REFERENCES movies(movie_id),
         FOREIGN KEY (person_id) REFERENCES persons(person_id)
     );
     """)
 
-    # Table DIRECTORS
+    # Table DIRECTORS (PK Composite)
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS directors (
         movie_id TEXT,
@@ -117,7 +119,7 @@ def create_schema():
     );
     """)
 
-    # Table WRITERS
+    # Table WRITERS (PK Composite)
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS writers (
         movie_id TEXT,
@@ -128,30 +130,19 @@ def create_schema():
     );
     """)
 
-    # --- 4. Nouvelles Tables découvertes ---
-
-    # Table PROFESSIONS (jobs des personnes)
+    # Table PROFESSIONS (PK Composite)
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS professions (
         person_id TEXT,
         job_name TEXT,
+        PRIMARY KEY (person_id, job_name),
         FOREIGN KEY (person_id) REFERENCES persons(person_id)
-    );
-    """)
-
-    # Table KNOWN_FOR_MOVIES (films pour lesquels une personne est connue)
-    cursor.execute("""
-    CREATE TABLE IF NOT EXISTS known_for_movies (
-        person_id TEXT,
-        movie_id TEXT,
-        FOREIGN KEY (person_id) REFERENCES persons(person_id),
-        FOREIGN KEY (movie_id) REFERENCES movies(movie_id)
     );
     """)
 
     conn.commit()
     conn.close()
-    print("✅ Nouveau schéma COMPLET créé avec succès !")
+    print("✅ Nouveau schéma STRICT (PK sur toutes les tables) créé avec succès !")
 
 if __name__ == "__main__":
     create_schema()

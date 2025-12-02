@@ -9,19 +9,17 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__fil
 DB_PATH = os.path.join(BASE_DIR, 'data', 'imdb.db')
 CSV_DIR = os.path.join(BASE_DIR, 'data', 'csv')
 
-# MAPPING COMPLET (CSV brut nettoyé -> Colonne SQL)
+# MAPPING OPTIMISÉ
+# On ne garde que ce qui existe dans le nouveau schéma
 COLUMN_MAPPING = {
-    # Clés communes
+    # Clés
     'mid': 'movie_id',
     'pid': 'person_id',
 
-    # Movies
-    'titleType': 'title_type',
+    # Movies (Suppression de titleType, isAdult, endYear)
     'primaryTitle': 'title',
     'originalTitle': 'original_title',
-    'isAdult': 'is_adult',
     'startYear': 'year',
-    'endYear': 'end_year',
     'runtimeMinutes': 'runtime',
     
     # Persons
@@ -51,14 +49,14 @@ COLUMN_MAPPING = {
     'job': 'job',
     
     # Characters
-    'name': 'character_name', # Dans characters.csv, 'name' est le nom du perso
+    'name': 'character_name',
 }
 
-# CONFIGURATION DES TABLES (Fichier CSV, Table SQL, Liste des colonnes à remplir)
+# CONFIGURATION DES TABLES
 TABLES_CONFIG = [
     # 1. Parents
     ('movies.csv', 'movies', 
-     ['movie_id', 'title_type', 'title', 'original_title', 'is_adult', 'year', 'end_year', 'runtime']),
+     ['movie_id', 'title', 'original_title', 'year', 'runtime']),
     
     ('persons.csv', 'persons', 
      ['person_id', 'name', 'birth_year', 'death_year']),
@@ -88,9 +86,6 @@ TABLES_CONFIG = [
     
     ('writers.csv', 'writers', 
      ['movie_id', 'person_id']),
-     
-    ('knownformovies.csv', 'known_for_movies', 
-     ['person_id', 'movie_id']),
 ]
 
 def clean_header(col_name):
@@ -106,7 +101,7 @@ def import_data():
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     
-    # Accélérateur
+    # Optimisation import
     cursor.execute("PRAGMA synchronous = OFF")
     cursor.execute("PRAGMA journal_mode = MEMORY")
     cursor.execute("PRAGMA foreign_keys = OFF")
@@ -123,27 +118,19 @@ def import_data():
         print(f"\nTraitement de {table_name.upper()} (depuis {csv_file})...")
         
         try:
-            # 1. Lecture
             df = pd.read_csv(csv_path, low_memory=False)
-            
-            # 2. Nettoyage headers
             df.columns = [clean_header(c) for c in df.columns]
-            
-            # 3. Renommage vers SQL
             df = df.rename(columns=COLUMN_MAPPING)
             
-            # 4. Vérification et Remplissage
+            # Vérification et Remplissage
             missing_cols = [col for col in sql_columns if col not in df.columns]
             if missing_cols:
-                # Si des colonnes manquent, on remplit avec None
                 for col in missing_cols:
                     df[col] = None
 
-            # 5. Sélection et Nettoyage Données
             df_final = df[sql_columns]
             df_final = df_final.where(pd.notnull(df_final), None)
             
-            # 6. Insertion
             data_to_insert = list(df_final.itertuples(index=False, name=None))
             
             placeholders = ', '.join(['?'] * len(sql_columns))
