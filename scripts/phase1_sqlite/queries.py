@@ -91,19 +91,18 @@ def query_director_collaborations(conn, actor_name: str) -> list:
     Retourne : Nom Réalisateur, Nombre de films ensemble
     """
     sql = """
-    SELECT 
-        pe_dir.name as director_name, 
-        COUNT(d.movie_id) as movie_count
-    FROM directors d
-    JOIN persons pe_dir ON d.person_id = pe_dir.person_id
-    WHERE d.movie_id IN (
-        SELECT p.movie_id 
-        FROM principals p
-        JOIN persons pe_act ON p.person_id = pe_act.person_id
-        WHERE pe_act.name LIKE ?
-          AND (p.category = 'actor' OR p.category = 'actress')
-    )
-    GROUP BY pe_dir.person_id
+    SELECT
+        pe_director.name as director_name,
+        COUNT(DISTINCT m.movie_id) as movie_count
+    FROM principals p_actor
+    JOIN persons pe_actor ON p_actor.person_id = pe_actor.person_id
+    JOIN movies m ON p_actor.movie_id = m.movie_id
+    JOIN principals p_director ON m.movie_id = p_director.movie_id
+    JOIN persons pe_director ON p_director.person_id = pe_director.person_id
+    WHERE pe_actor.name LIKE ? 
+      AND p_actor.category IN ('actor', 'actress')
+      AND p_director.category = 'director'
+    GROUP BY pe_director.person_id
     ORDER BY movie_count DESC
     LIMIT 10;
     """
@@ -164,23 +163,30 @@ def query_actor_career_stats(conn, actor_name: str) -> list:
 # =============================================================================
 def query_top_3_per_genre(conn) -> list:
     """
-    Q7: Top 3 films par genre.
-    Retourne : Genre, Titre, Rang
+    Q7: Pour chaque genre, les 3 meilleurs films avec leur rang.
+    Utilise RANK() OVER (PARTITION BY ...)
+    Retourne : Genre, Rang, Titre, Note
     """
     sql = """
     WITH RankedMovies AS (
         SELECT 
             g.genre,
             m.title,
-            RANK() OVER (PARTITION BY g.genre ORDER BY r.average_rating DESC, r.num_votes DESC) as rank
+            r.average_rating,
+            -- RANK() attribue un rang, réinitialisé à chaque changement de genre
+            RANK() OVER (
+                PARTITION BY g.genre 
+                ORDER BY r.average_rating DESC, r.num_votes DESC
+            ) as rank
         FROM genres g
         JOIN movies m ON g.movie_id = m.movie_id
         JOIN ratings r ON m.movie_id = r.movie_id
-        WHERE r.num_votes > 1000
+        WHERE r.num_votes > 1000 
     )
-    SELECT genre, title, rank 
+    SELECT genre, rank, title, average_rating
     FROM RankedMovies
-    WHERE rank <= 3;
+    WHERE rank <= 3
+    ORDER BY genre ASC, rank ASC;
     """
     return conn.execute(sql).fetchall()
 
@@ -189,32 +195,42 @@ def query_top_3_per_genre(conn) -> list:
 # =============================================================================
 def query_breakthrough_actors(conn) -> list:
     """
-    Q8: Personnes ayant percé grâce à un film.
-    Retourne : Nom, Film de la percée, Année
+    Q8: Personnes ayant percé grâce à un film (Premier succès >200k votes après des films <200k).
+    Utilise ROW_NUMBER() pour ne garder que le 1er succès par acteur.
     """
     sql = """
-    SELECT 
-        pe.name,
-        m_break.title as breakthrough_movie,
-        m_break.year as breakthrough_year
-    FROM principals p
-    JOIN persons pe ON p.person_id = pe.person_id
-    -- Film succès (>200k votes)
-    JOIN movies m_break ON p.movie_id = m_break.movie_id
-    JOIN ratings r_break ON m_break.movie_id = r_break.movie_id
-    -- Films précédents (<200k votes)
-    JOIN principals p_before ON pe.person_id = p_before.person_id
-    JOIN movies m_before ON p_before.movie_id = m_before.movie_id
-    JOIN ratings r_before ON m_before.movie_id = r_before.movie_id
-    
-    WHERE r_break.num_votes > 200000
-      AND r_before.num_votes < 200000
-      AND m_before.year < m_break.year
-      AND p.category IN ('actor', 'actress')
-      
-    GROUP BY pe.person_id, m_break.movie_id
-    HAVING COUNT(DISTINCT m_before.movie_id) >= 3
-    ORDER BY COUNT(DISTINCT m_before.movie_id) DESC
+    WITH Candidates AS (
+        SELECT 
+            pe.name,
+            m_break.title as breakthrough_movie,
+            m_break.year as breakthrough_year,
+            -- On numérote les succès par ordre chronologique pour chaque acteur
+            ROW_NUMBER() OVER (
+                PARTITION BY pe.person_id 
+                ORDER BY m_break.year ASC
+            ) as rn
+        FROM principals p
+        JOIN persons pe ON p.person_id = pe.person_id
+        -- Film succès (>200k votes)
+        JOIN movies m_break ON p.movie_id = m_break.movie_id
+        JOIN ratings r_break ON m_break.movie_id = r_break.movie_id
+        -- Films précédents (<200k votes)
+        JOIN principals p_before ON pe.person_id = p_before.person_id
+        JOIN movies m_before ON p_before.movie_id = m_before.movie_id
+        JOIN ratings r_before ON m_before.movie_id = r_before.movie_id
+        
+        WHERE r_break.num_votes > 200000
+          AND r_before.num_votes < 200000
+          AND m_before.year < m_break.year
+          AND p.category IN ('actor', 'actress')
+          
+        GROUP BY pe.person_id, m_break.movie_id
+        -- Il faut avoir fait au moins 3 petits films avant
+        HAVING COUNT(DISTINCT m_before.movie_id) >= 3
+    )
+    SELECT name, breakthrough_movie, breakthrough_year
+    FROM Candidates
+    WHERE rn = 1 -- On ne garde que le tout premier succès
     LIMIT 10;
     """
     return conn.execute(sql).fetchall()
@@ -273,12 +289,12 @@ if __name__ == "__main__":
             print(f"Années {row['decade']} : {row['num_movies']} films (Moyenne: {row['avg_rating']})")
         
         print("\n--- Q7: Top 3 par Genre ---")
-        for row in query_top_3_per_genre(conn)[:6]: 
-            print(f"{row['genre']} #{row['rank']} : {row['title']}")
+        for row in query_top_3_per_genre(conn): 
+            print(f"{row['genre']} #{row['rank']} : {row['title']} (Note: {row['average_rating']})")
 
         print("\n--- Q8: Carrières Propulsées ---")
         for row in query_breakthrough_actors(conn):
-            print(f"{row['name']} grâce à '{row['breakthrough_movie']}' ({row['breakthrough_year']})")
+            print(f"{row['name']} grâce à '{row['breakthrough_movie']}' ({row['breakthrough_year']}) ")
 
         print("\n--- Q9: Longévité ---")
         for row in query_longest_careers(conn):
