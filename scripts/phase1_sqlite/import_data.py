@@ -9,7 +9,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__fil
 DB_PATH = os.path.join(BASE_DIR, 'data', 'imdb.db')
 CSV_DIR = os.path.join(BASE_DIR, 'data', 'csv')
 
-# MAPPING OPTIMISÉ
+
 # On ne garde que ce qui existe dans le nouveau schéma
 COLUMN_MAPPING = {
     # Clés

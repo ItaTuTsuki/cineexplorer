@@ -14,7 +14,6 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__fil
 DB_PATH = os.path.join(BASE_DIR, 'data', 'imdb.db')
 
 # --- LISTE DES INDEX À CRÉER ---
-# Ces index sont conçus pour accélérer spécifiquement les 9 requêtes du projet
 INDEXES = [
     # Pour Q1, Q4, Q6, Q8, Q9 (Recherche par nom et filtres par catégorie)
     "CREATE INDEX IF NOT EXISTS idx_persons_name ON persons(name);",
@@ -29,7 +28,7 @@ INDEXES = [
     # Pour Q2, Q5, Q7, Q8 (Tris et filtres sur les notes/votes)
     "CREATE INDEX IF NOT EXISTS idx_ratings_perf ON ratings(average_rating, num_votes);",
     
-    # Pour les Jointures (FK) - Souvent oubliés mais cruciaux pour les JOIN
+    # Pour les Jointures (FK) entre tables
     "CREATE INDEX IF NOT EXISTS idx_principals_movie ON principals(movie_id);",
     "CREATE INDEX IF NOT EXISTS idx_principals_person ON principals(person_id);",
     "CREATE INDEX IF NOT EXISTS idx_characters_movie ON characters(movie_id);",
@@ -51,12 +50,12 @@ def drop_indexes(conn):
         idx_name = idx_sql.split('INDEX IF NOT EXISTS ')[1].split(' ON')[0]
         cursor.execute(f"DROP INDEX IF EXISTS {idx_name};")
     conn.commit()
-    print("🧹 Index supprimés (État initial)")
+    print("  Index supprimés (État initial)")
 
 def create_indexes(conn):
     """Crée les index optimisés"""
     cursor = conn.cursor()
-    print("🏗️  Création des index en cours...", end=" ", flush=True)
+    print("  Création des index en cours...", end=" ", flush=True)
     start = time.time()
     for sql in INDEXES:
         cursor.execute(sql)
@@ -71,8 +70,7 @@ def run_benchmark():
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
 
-    # 1. PARAMÈTRES DES REQUÊTES (Pour que le test soit juste)
-    # On utilise des fonctions lambda pour retarder l'exécution
+    # --- DÉFINITION DES TÂCHES DE REQUÊTES ---
     tasks = [
         ("Q1 - Filmographie", lambda: queries.query_actor_filmography(conn, "Brad Pitt")),
         ("Q2 - Top N films", lambda: queries.query_top_movies_by_genre(conn, "Action", 2000, 2010, 10)),
@@ -123,7 +121,6 @@ def run_benchmark():
         # Calcul du gain : (Avant - Après) / Avant * 100
         gain = ((before - after) / before) * 100 if before > 0 else 0
         
-        # Coloration (optionnel pour terminal)
         gain_str = f"{gain:+.1f}%"
         
         print(f"{name:<25} | {before:15.2f} | {after:15.2f} | {gain_str:10}")
