@@ -302,4 +302,4 @@ if __name__ == "__main__":
 
         conn.close()
     except Exception as e:
-        print(f"❌ Erreur : {e}")
+        print(f" Erreur : {e}")
