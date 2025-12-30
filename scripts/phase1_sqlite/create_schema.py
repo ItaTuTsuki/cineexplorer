@@ -2,7 +2,10 @@ import sqlite3
 import os
 
 # Chemin vers la base de données
-DB_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'data', 'imdb.db')
+DB_PATH = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "data", "imdb.db"
+)
+
 
 def create_schema():
     # Suppression de l'ancienne base pour repartir proprement
@@ -11,7 +14,9 @@ def create_schema():
             os.remove(DB_PATH)
             print(f"🗑️ Ancienne base supprimée : {DB_PATH}")
         except PermissionError:
-            print(f"❌ Impossible de supprimer {DB_PATH}. Fermez toute connexion active.")
+            print(
+                f"❌ Impossible de supprimer {DB_PATH}. Fermez toute connexion active."
+            )
             return
 
     print(f"Création de la base de données dans : {DB_PATH}")
@@ -22,7 +27,8 @@ def create_schema():
     # --- 1. Tables Principales ---
 
     # Table MOVIES
-    cursor.execute("""
+    cursor.execute(
+        """
     CREATE TABLE IF NOT EXISTS movies (
         movie_id TEXT PRIMARY KEY,
         title TEXT,
@@ -30,32 +36,38 @@ def create_schema():
         year INTEGER,
         runtime INTEGER
     );
-    """)
+    """
+    )
 
     # Table PERSONS
-    cursor.execute("""
+    cursor.execute(
+        """
     CREATE TABLE IF NOT EXISTS persons (
         person_id TEXT PRIMARY KEY,
         name TEXT,
         birth_year INTEGER,
         death_year INTEGER
     );
-    """)
+    """
+    )
 
     # --- 2. Tables de Détails ---
 
     # Table RATINGS (1-1 avec movies, donc movie_id est PK)
-    cursor.execute("""
+    cursor.execute(
+        """
     CREATE TABLE IF NOT EXISTS ratings (
         movie_id TEXT PRIMARY KEY,
         average_rating REAL,
         num_votes INTEGER,
         FOREIGN KEY (movie_id) REFERENCES movies(movie_id)
     );
-    """)
+    """
+    )
 
     # Table TITLES (PK auto-incrémentée car un film a plusieurs titres)
-    cursor.execute("""
+    cursor.execute(
+        """
     CREATE TABLE IF NOT EXISTS titles (
         title_id INTEGER PRIMARY KEY AUTOINCREMENT,
         movie_id TEXT,
@@ -68,22 +80,26 @@ def create_schema():
         is_original_title INTEGER,
         FOREIGN KEY (movie_id) REFERENCES movies(movie_id)
     );
-    """)
+    """
+    )
 
     # Table GENRES (PK Composite)
-    cursor.execute("""
+    cursor.execute(
+        """
     CREATE TABLE IF NOT EXISTS genres (
         movie_id TEXT,
         genre TEXT,
         PRIMARY KEY (movie_id, genre),
         FOREIGN KEY (movie_id) REFERENCES movies(movie_id)
     );
-    """)
+    """
+    )
 
     # --- 3. Tables de Relations (Casting & Crew) ---
 
     # Table PRINCIPALS (PK Composite complexe)
-    cursor.execute("""
+    cursor.execute(
+        """
     CREATE TABLE IF NOT EXISTS principals (
         movie_id TEXT,
         ordering INTEGER,
@@ -94,10 +110,12 @@ def create_schema():
         FOREIGN KEY (movie_id) REFERENCES movies(movie_id),
         FOREIGN KEY (person_id) REFERENCES persons(person_id)
     );
-    """)
+    """
+    )
 
     # Table CHARACTERS (PK Composite : Film + Acteur + Rôle)
-    cursor.execute("""
+    cursor.execute(
+        """
     CREATE TABLE IF NOT EXISTS characters (
         movie_id TEXT,
         person_id TEXT,
@@ -106,10 +124,12 @@ def create_schema():
         FOREIGN KEY (movie_id) REFERENCES movies(movie_id),
         FOREIGN KEY (person_id) REFERENCES persons(person_id)
     );
-    """)
+    """
+    )
 
     # Table DIRECTORS (PK Composite)
-    cursor.execute("""
+    cursor.execute(
+        """
     CREATE TABLE IF NOT EXISTS directors (
         movie_id TEXT,
         person_id TEXT,
@@ -117,10 +137,12 @@ def create_schema():
         FOREIGN KEY (movie_id) REFERENCES movies(movie_id),
         FOREIGN KEY (person_id) REFERENCES persons(person_id)
     );
-    """)
+    """
+    )
 
     # Table WRITERS (PK Composite)
-    cursor.execute("""
+    cursor.execute(
+        """
     CREATE TABLE IF NOT EXISTS writers (
         movie_id TEXT,
         person_id TEXT,
@@ -128,21 +150,25 @@ def create_schema():
         FOREIGN KEY (movie_id) REFERENCES movies(movie_id),
         FOREIGN KEY (person_id) REFERENCES persons(person_id)
     );
-    """)
+    """
+    )
 
     # Table PROFESSIONS (PK Composite)
-    cursor.execute("""
+    cursor.execute(
+        """
     CREATE TABLE IF NOT EXISTS professions (
         person_id TEXT,
         job_name TEXT,
         PRIMARY KEY (person_id, job_name),
         FOREIGN KEY (person_id) REFERENCES persons(person_id)
     );
-    """)
+    """
+    )
 
     conn.commit()
     conn.close()
     print("✅ Nouveau schéma STRICT (PK sur toutes les tables) créé avec succès !")
+
 
 if __name__ == "__main__":
     create_schema()

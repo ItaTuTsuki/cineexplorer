@@ -3,7 +3,8 @@ import os
 
 # Configuration du chemin vers la DB
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-DB_PATH = os.path.join(BASE_DIR, 'data', 'imdb.db')
+DB_PATH = os.path.join(BASE_DIR, "data", "imdb.db")
+
 
 def get_db_connection():
     if not os.path.exists(DB_PATH):
@@ -11,6 +12,7 @@ def get_db_connection():
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     return conn
+
 
 # =============================================================================
 # REQUÊTE 1 : Filmographie d'un acteur
@@ -34,12 +36,15 @@ def query_actor_filmography(conn, actor_name: str) -> list:
     ORDER BY m.year DESC
     LIMIT 20;
     """
-    return conn.execute(sql, (f'%{actor_name}%',)).fetchall()
+    return conn.execute(sql, (f"%{actor_name}%",)).fetchall()
+
 
 # =============================================================================
 # REQUÊTE 2 : Top N films d'un genre
 # =============================================================================
-def query_top_movies_by_genre(conn, genre: str, year_start: int, year_end: int, n: int) -> list:
+def query_top_movies_by_genre(
+    conn, genre: str, year_start: int, year_end: int, n: int
+) -> list:
     """
     Q2: Les N meilleurs films d'un genre selon la note moyenne.
     Retourne : Titre, Année, Note
@@ -58,6 +63,7 @@ def query_top_movies_by_genre(conn, genre: str, year_start: int, year_end: int, 
     LIMIT ?;
     """
     return conn.execute(sql, (genre, year_start, year_end, n)).fetchall()
+
 
 # =============================================================================
 # REQUÊTE 3 : Acteurs multi-rôles
@@ -81,6 +87,7 @@ def query_multi_role_actors(conn) -> list:
     LIMIT 20;
     """
     return conn.execute(sql).fetchall()
+
 
 # =============================================================================
 # REQUÊTE 4 : Collaborations
@@ -106,7 +113,8 @@ def query_director_collaborations(conn, actor_name: str) -> list:
     ORDER BY movie_count DESC
     LIMIT 10;
     """
-    return conn.execute(sql, (f'%{actor_name}%',)).fetchall()
+    return conn.execute(sql, (f"%{actor_name}%",)).fetchall()
+
 
 # =============================================================================
 # REQUÊTE 5 : Genres populaires
@@ -127,6 +135,7 @@ def query_popular_genres(conn) -> list:
     ORDER BY avg_rating DESC;
     """
     return conn.execute(sql).fetchall()
+
 
 # =============================================================================
 # REQUÊTE 6 : Évolution de carrière
@@ -156,7 +165,8 @@ def query_actor_career_stats(conn, actor_name: str) -> list:
     GROUP BY decade
     ORDER BY decade;
     """
-    return conn.execute(sql, (f'%{actor_name}%',)).fetchall()
+    return conn.execute(sql, (f"%{actor_name}%",)).fetchall()
+
 
 # =============================================================================
 # REQUÊTE 7 : Classement par genre
@@ -189,6 +199,7 @@ def query_top_3_per_genre(conn) -> list:
     ORDER BY genre ASC, rank ASC;
     """
     return conn.execute(sql).fetchall()
+
 
 # =============================================================================
 # REQUÊTE 8 : Carrière propulsée
@@ -235,6 +246,7 @@ def query_breakthrough_actors(conn) -> list:
     """
     return conn.execute(sql).fetchall()
 
+
 # =============================================================================
 # REQUÊTE 9 : Requête libre (Longévité)
 # =============================================================================
@@ -263,7 +275,7 @@ def query_longest_careers(conn) -> list:
 if __name__ == "__main__":
     try:
         conn = get_db_connection()
-        
+
         print("--- Q1: Filmographie (Harrison Ford) ---")
         for row in query_actor_filmography(conn, "Harrison Ford"):
             print(f"{row['title']} ({row['year']}) - Rôle: {row['character_name']}")
@@ -286,15 +298,21 @@ if __name__ == "__main__":
 
         print("\n--- Q6: Carrière (Tom Hanks) ---")
         for row in query_actor_career_stats(conn, "Tom Hanks"):
-            print(f"Années {row['decade']} : {row['num_movies']} films (Moyenne: {row['avg_rating']})")
-        
+            print(
+                f"Années {row['decade']} : {row['num_movies']} films (Moyenne: {row['avg_rating']})"
+            )
+
         print("\n--- Q7: Top 3 par Genre ---")
-        for row in query_top_3_per_genre(conn): 
-            print(f"{row['genre']} #{row['rank']} : {row['title']} (Note: {row['average_rating']})")
+        for row in query_top_3_per_genre(conn):
+            print(
+                f"{row['genre']} #{row['rank']} : {row['title']} (Note: {row['average_rating']})"
+            )
 
         print("\n--- Q8: Carrières Propulsées ---")
         for row in query_breakthrough_actors(conn):
-            print(f"{row['name']} grâce à '{row['breakthrough_movie']}' ({row['breakthrough_year']}) ")
+            print(
+                f"{row['name']} grâce à '{row['breakthrough_movie']}' ({row['breakthrough_year']}) "
+            )
 
         print("\n--- Q9: Longévité ---")
         for row in query_longest_careers(conn):
