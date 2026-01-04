@@ -1,0 +1,72 @@
+{% extends 'movies/base.html' %}
+{% load static %} {% block title %}Statistiques{% endblock %}
+
+{% block content %}
+<h1 class="mb-4">Statistiques du Catalogue</h1>
+
+<div class="row">
+    <div class="col-md-6 mb-4">
+        <div class="card shadow-sm">
+            <div class="card-header fw-bold">Films par Genre (Top 15)</div>
+            <div class="card-body">
+                <canvas id="genresChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6 mb-4">
+        <div class="card shadow-sm">
+            <div class="card-header fw-bold">Évolution par Décennie</div>
+            <div class="card-body">
+                <canvas id="decadesChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6 mb-4">
+        <div class="card shadow-sm">
+            <div class="card-header fw-bold">Acteurs les plus présents</div>
+            <div class="card-body">
+                <canvas id="actorsChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6 mb-4">
+        <div class="card shadow-sm">
+            <div class="card-header fw-bold">Distribution des Notes (0-10)</div>
+            <div class="card-body">
+                <canvas id="ratingsChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+    window.statsData = {
+        genres: {
+            labels: {{ genres_labels|safe }},
+            counts: {{ genres_counts|safe }}
+        },
+        decades: {
+            labels: {{ decades_labels|safe }},
+            counts: {{ decades_counts|safe }}
+        },
+        actors: {
+            labels: {{ actors_labels|safe }},
+            counts: {{ actors_counts|safe }}
+        },
+        ratings: {
+            labels: {{ rating_labels|safe }},
+            counts: {{ rating_counts|safe }}
+        }
+    };
+</script>
+
+<script src="{% static 'js/stats.js' %}"></script>
+
+{% endblock %}

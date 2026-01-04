@@ -17,9 +17,16 @@ Including another URLconf
 
 from django.contrib import admin
 from django.urls import path
-from movies.views import test_connection
+from movies import views
 
 urlpatterns = [
-    path("admin/", admin.site.urls),
-    path("test/", test_connection),
+    path('admin/', admin.site.urls),
+    path('', views.home, name='home'),             # Accueil
+    path('movies/', views.movie_list, name='movie_list'), # Liste 
+    path('stats/', views.stats, name='stats'),     # Stats 
+    path('search/', views.search, name='search'),   # Recherche 
+    path('movies/<str:movie_id>/', views.movie_detail, name='movie_detail'),
+    path('person/<str:person_id>/', views.person_detail, name='person_detail'),
+
+    path('test/', views.test_connection),
 ]

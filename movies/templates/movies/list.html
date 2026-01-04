@@ -1,0 +1,110 @@
+{% extends 'movies/base.html' %}
+
+{% block title %}Catalogue{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-3">
+        <div class="card mb-4">
+            <div class="card-header fw-bold"><i class="fas fa-filter me-2"></i>Filtres</div>
+            <div class="card-body">
+                <form method="get">
+                    <div class="mb-3">
+                        <label class="form-label text-muted small text-uppercase fw-bold">Genre</label>
+                        <select name="genre" class="form-select">
+                            <option value="">Tous</option>
+                            {% for g in all_genres %}
+                            <option value="{{ g }}" {% if current_genre == g %}selected{% endif %}>{{ g }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label text-muted small text-uppercase fw-bold">Année</label>
+                        <div class="input-group">
+                            <input type="number" name="year_min" class="form-control" placeholder="Min" value="{{ request.GET.year_min }}">
+                            <input type="number" name="year_max" class="form-control" placeholder="Max" value="{{ request.GET.year_max }}">
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label text-muted small text-uppercase fw-bold">Note Min.</label>
+                        <input type="number" step="0.5" name="rating_min" class="form-control" placeholder="0-10" value="{{ request.GET.rating_min }}">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label text-muted small text-uppercase fw-bold">Trier par</label>
+                        <select name="sort" class="form-select">
+                            <option value="-year" {% if current_sort == '-year' %}selected{% endif %}>Plus récents</option>
+                            <option value="year" {% if current_sort == 'year' %}selected{% endif %}>Plus anciens</option>
+                            <option value="rating" {% if current_sort == 'rating' %}selected{% endif %}>Meilleures notes</option>
+                            <option value="title" {% if current_sort == 'title' %}selected{% endif %}>Alphabétique</option>
+                        </select>
+                    </div>
+
+                    <button type="submit" class="btn btn-danger w-100 fw-bold">Appliquer</button>
+                    <a href="{% url 'movie_list' %}" class="btn btn-outline-secondary w-100 mt-2">Réinitialiser</a>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-9">
+        <h2 class="mb-4">Films trouvés ({{ page_obj.paginator.count }})</h2>
+        
+        <div class="row">
+            {% for movie in page_obj %}
+            <div class="col-md-6 col-lg-4 mb-4">
+                <div class="card h-100 shadow-sm card-movie">
+                    <div class="card-body position-relative">
+                        <h5 class="card-title text-truncate">
+                            <a href="{% url 'movie_detail' movie.movie_id %}" class="text-decoration-none text-white stretched-link">
+                                {{ movie.title }}
+                            </a>
+                        </h5>
+                        <div class="d-flex justify-content-between align-items-center mt-2">
+                            <h6 class="card-subtitle mb-0 text-muted">{{ movie.year }}</h6>
+                            <p class="card-text mb-0">
+                                {% if movie.ratings %}
+                                    <span class="badge bg-warning text-dark fw-bold"><i class="fas fa-star me-1"></i>{{ movie.ratings.average_rating }}</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">-</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-12">
+                <div class="alert alert-dark text-center">Aucun film ne correspond à vos critères.</div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <nav aria-label="Page navigation" class="mt-4">
+            <ul class="pagination justify-content-center">
+                {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page=1&genre={{ request.GET.genre }}&sort={{ request.GET.sort }}&year_min={{ request.GET.year_min }}&year_max={{ request.GET.year_max }}&rating_min={{ request.GET.rating_min }}">&laquo;</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}&genre={{ request.GET.genre }}&sort={{ request.GET.sort }}&year_min={{ request.GET.year_min }}&year_max={{ request.GET.year_max }}&rating_min={{ request.GET.rating_min }}">Précédent</a>
+                    </li>
+                {% endif %}
+
+                <li class="page-item active"><span class="page-link">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span></li>
+
+                {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}&genre={{ request.GET.genre }}&sort={{ request.GET.sort }}&year_min={{ request.GET.year_min }}&year_max={{ request.GET.year_max }}&rating_min={{ request.GET.rating_min }}">Suivant</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}&genre={{ request.GET.genre }}&sort={{ request.GET.sort }}&year_min={{ request.GET.year_min }}&year_max={{ request.GET.year_max }}&rating_min={{ request.GET.rating_min }}">&raquo;</a>
+                    </li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,124 @@
+{% extends 'movies/base.html' %}
+
+{% block title %}{{ person.name }}{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'home' %}" class="text-muted">Accueil</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'search' %}?q={{ person.name }}" class="text-muted">Recherche</a>
+        </li>
+        <li class="breadcrumb-item active text-white" aria-current="page">{{ person.name }}</li>
+    </ol>
+</nav>
+
+<div class="card mb-4 border-0 shadow-sm" style="background-color: transparent;">
+    <div class="card-body ps-0">
+        <div class="row align-items-center">
+            <div class="col-md-2 text-center">
+                <div class="rounded-circle bg-dark d-flex align-items-center justify-content-center mx-auto"
+                    style="width: 120px; height: 120px; border: 2px solid #333;">
+                    <i class="fas fa-user fa-4x text-secondary"></i>
+                </div>
+            </div>
+            <div class="col-md-10">
+                <h1 class="display-5 fw-bold text-white">{{ person.name }}</h1>
+                <p class="lead text-muted mb-2">
+                    {% if person.birth_year %}
+                    Né(e) en {{ person.birth_year }}
+                    {% endif %}
+                    {% if person.death_year %}
+                    - Décédé(e) en {{ person.death_year }}
+                    {% endif %}
+                </p>
+                {% if person.primary_profession %}
+                <p class="text-white"><strong class="text-danger">Métiers :</strong> {{ person.primary_profession|title
+                    }}</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header border-bottom border-secondary">
+        <ul class="nav nav-tabs card-header-tabs" id="pills-tab" role="tablist">
+            {% if cast_roles %}
+            <li class="nav-item">
+                <button class="nav-link active text-white" data-bs-toggle="tab" data-bs-target="#acting" type="button">
+                    <i class="fas fa-mask me-2"></i>Acteur/Actrice ({{ cast_roles|length }})
+                </button>
+            </li>
+            {% endif %}
+
+            {% if director_roles %}
+            <li class="nav-item">
+                <button class="nav-link text-white {% if not cast_roles %}active{% endif %}" data-bs-toggle="tab"
+                    data-bs-target="#directing" type="button">
+                    <i class="fas fa-video me-2"></i>Réalisation ({{ director_roles|length }})
+                </button>
+            </li>
+            {% endif %}
+
+            {% if writer_roles %}
+            <li class="nav-item">
+                <button class="nav-link text-white" data-bs-toggle="tab" data-bs-target="#writing" type="button">
+                    <i class="fas fa-pen-nib me-2"></i>Scénario ({{ writer_roles|length }})
+                </button>
+            </li>
+            {% endif %}
+        </ul>
+    </div>
+
+    <div class="card-body p-0">
+        <div class="tab-content">
+            <div class="tab-pane fade show active" id="acting">
+                <div class="list-group list-group-flush">
+                    {% for role in cast_roles %}
+                    <a href="{% url 'movie_detail' role.movie.movie_id %}"
+                        class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                        <div>
+                            <span class="fw-bold text-white fs-5">{{ role.movie.title }}</span>
+
+                            {% if role.characters and role.characters != '\N' %}
+                            <span class="ms-2 text-info fst-italic small">
+                                as {{ role.characters|cut:'"'|cut:'['|cut:']' }}
+                            </span>
+                            {% endif %}
+                        </div>
+                        <span class="badge bg-dark border border-secondary">{{ role.movie.year }}</span>
+                    </a>
+                    {% empty %}
+                    <div class="p-4 text-center text-muted">Pas de films trouvés.</div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-pane fade {% if not cast_roles %}show active{% endif %}" id="directing">
+            <div class="list-group list-group-flush">
+                {% for role in director_roles %}
+                <a href="{% url 'movie_detail' role.movie.movie_id %}"
+                    class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                    <span class="fw-bold text-white">{{ role.movie.title }}</span>
+                    <span class="badge bg-dark border border-secondary">{{ role.movie.year }}</span>
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="tab-pane fade" id="writing">
+            <div class="list-group list-group-flush">
+                {% for role in writer_roles %}
+                <a href="{% url 'movie_detail' role.movie.movie_id %}"
+                    class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                    <span class="fw-bold text-white">{{ role.movie.title }}</span>
+                    <span class="badge bg-dark border border-secondary">{{ role.movie.year }}</span>
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+{% endblock %}

@@ -1,0 +1,72 @@
+{% extends 'movies/base.html' %}
+
+{% block title %}Recherche{% endblock %}
+
+{% block content %}
+<div class="text-center mb-5">
+    <h1 class="mb-3">Résultats de recherche</h1>
+    <p class="text-muted">Pour : "<span class="text-white fw-bold">{{ query }}</span>"</p>
+    
+    <div class="row justify-content-center mt-4">
+        <div class="col-md-6">
+            <form action="" method="get" class="d-flex">
+                <input class="form-control me-2 form-control-lg" type="search" name="q" placeholder="Nouvelle recherche..." value="{{ query }}">
+                <button class="btn btn-danger btn-lg" type="submit">Rechercher</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% if query %}
+<div class="row">
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header bg-danger text-white fw-bold">
+                <i class="fas fa-film me-2"></i>Films
+            </div>
+            <div class="list-group list-group-flush">
+                {% for movie in movies %}
+                <a href="{% url 'movie_detail' movie.movie_id %}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="mb-0 fw-bold text-white">{{ movie.title }}</h6>
+                        <small class="text-muted">{{ movie.year }}</small>
+                    </div>
+                    <i class="fas fa-chevron-right text-muted small"></i>
+                </a>
+                {% empty %}
+                <div class="list-group-item text-muted text-center py-4">
+                    Aucun film trouvé.
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header bg-success text-white fw-bold" style="background-color: #198754 !important;">
+                <i class="fas fa-user me-2"></i>Personnes
+            </div>
+            <div class="list-group list-group-flush">
+                {% for person in persons %}
+                <div class="list-group-item d-flex justify-content-between align-items-center">
+                    <div>
+                        <a href="{% url 'person_detail' person.person_id %}" class="text-decoration-none text-white fw-bold stretched-link">
+                            {{ person.name }}
+                        </a>
+                        {% if person.primary_profession %}
+                        <div class="text-muted small fst-italic">{{ person.primary_profession }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% empty %}
+                <div class="list-group-item text-muted text-center py-4">
+                    Aucune personne trouvée.
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

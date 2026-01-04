@@ -1,0 +1,176 @@
+{% extends 'movies/base.html' %}
+
+{% block title %}{{ movie.title }}{% endblock %}
+
+{% block content %}
+
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'home' %}" class="text-muted">Accueil</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'movie_list' %}" class="text-muted">Films</a></li>
+        <li class="breadcrumb-item active text-white" aria-current="page">{{ movie.title }}</li>
+    </ol>
+</nav>
+
+<div class="card mb-4 border-0" style="background: transparent;">
+    <div class="row g-0">
+        <div class="col-md-3 bg-dark text-white d-flex align-items-center justify-content-center rounded" style="min-height: 350px; background-color: #000 !important; border: 1px solid #333;">
+            <div class="text-center">
+                <i class="fas fa-film fa-5x mb-3 text-secondary"></i>
+                <br><span class="text-muted">Pas d'affiche</span>
+            </div>
+        </div>
+        
+        <div class="col-md-9 ps-md-4">
+            <div class="card-body p-0 py-3">
+                <h1 class="display-4 fw-bold text-white">{{ movie.title }}</h1>
+                <p class="text-muted fs-5">
+                    {{ movie.year }} 
+                    {% if movie.runtime %} • {{ movie.runtime }} min {% endif %}
+                    {% if movie.genres %} • 
+                        {% for g in movie.genres %}
+                            <span class="badge bg-secondary border border-dark">{{ g }}</span>
+                        {% endfor %}
+                    {% endif %}
+                </p>
+
+                <div class="mb-4">
+                    {% if movie.rating.average %}
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-star text-warning fa-2x me-2"></i>
+                            <span class="display-6 fw-bold text-white">{{ movie.rating.average }}</span>
+                            <span class="text-muted fs-4 ms-1">/10</span>
+                        </div>
+                        <small class="text-muted">{{ movie.rating.votes }} votes</small>
+                    {% else %}
+                        <span class="text-muted">Non noté</span>
+                    {% endif %}
+                </div>
+
+                <div class="row mt-4">
+                    <div class="col-md-6">
+                        <h5 class="text-uppercase text-muted small fw-bold mb-3">Réalisation</h5>
+                        <ul class="list-unstyled">
+                            {% for d in movie.directors %}
+                            <li class="mb-1">
+                                {% if d.id %}
+                                    <a href="{% url 'person_detail' d.id %}" class="text-white text-decoration-none fw-bold hover-link">{{ d.name }}</a>
+                                {% else %}
+                                    <span class="text-white">{{ d.name }}</span>
+                                {% endif %}
+                            </li>
+                            {% empty %}
+                            <li class="text-muted">Inconnu</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h5 class="text-uppercase text-muted small fw-bold mb-3">Scénario</h5>
+                        <ul class="list-unstyled">
+                            {% for w in movie.writers %}
+                            <li class="mb-1">
+                                {% if w.id %}
+                                    <a href="{% url 'person_detail' w.id %}" class="text-white text-decoration-none hover-link">{{ w.name }}</a>
+                                {% else %}
+                                    <span class="text-white">{{ w.name }}</span>
+                                {% endif %}
+                            </li>
+                            {% empty %}
+                            <li class="text-muted">Inconnu</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header fw-bold text-uppercase small">Casting</div>
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-dark">
+                        <tr>
+                            <th style="width: 40%;">Acteur / Actrice</th>
+                            <th>Rôle(s)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for actor in movie.cast %}
+                        <tr>
+                            {% with pid=actor.id|default:actor.person_id %}
+                            <td class="fw-bold">
+                                {% if pid %}
+                                    <a href="{% url 'person_detail' pid %}" class="text-white text-decoration-none">
+                                        {{ actor.name }}
+                                    </a>
+                                {% else %}
+                                    <span class="text-white">{{ actor.name }}</span>
+                                {% endif %}
+                            </td>
+                            {% endwith %}
+                            <td class="text-muted">
+                                {% for char in actor.characters %}
+                                    {{ char }}{% if not forloop.last %}, {% endif %}
+                                {% empty %}
+                                    <em>N/A</em>
+                                {% endfor %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="2" class="text-muted">Aucune information de casting.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card">
+             <div class="card-header fw-bold text-uppercase small">Titres Internationaux</div>
+            <ul class="list-group list-group-flush">
+                {% for t in movie.titles %}
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <span>{{ t.title }}</span>
+                    <span class="badge bg-dark border border-secondary">{{ t.region|default:"Intl" }}</span>
+                </li>
+                {% empty %}
+                <li class="list-group-item text-muted">Aucun titre alternatif.</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</div>
+
+<div class="mt-5">
+    <h3 class="mb-4"><i class="fas fa-random text-danger me-2"></i>Dans le même genre</h3>
+    <div class="row">
+        {% for sim in similar_movies %}
+        <div class="col-md-3 mb-3">
+            <div class="card h-100 shadow-sm card-movie">
+                <div class="card-body">
+                    <h6 class="card-title text-truncate">
+                        <a href="{% url 'movie_detail' sim.id %}" class="text-decoration-none text-white stretched-link">
+                            {{ sim.title }}
+                        </a>
+                    </h6>
+                    <div class="d-flex justify-content-between align-items-center mt-2">
+                        <small class="text-muted">{{ sim.year }}</small>
+                        {% if sim.rating.average %}
+                        <span class="badge bg-warning text-dark">{{ sim.rating.average }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <p class="text-muted">Aucun film similaire trouvé.</p>
+        {% endfor %}
+    </div>
+</div>
+
+{% endblock %}
