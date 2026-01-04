@@ -118,4 +118,4 @@ USE_TZ = True
 STATIC_URL = "static/"
 
 MONGO_URI = "mongodb://localhost:27017,localhost:27018,localhost:27019/?replicaSet=rs0"
-MONGO_DB_NAME = "imdb_project"
+MONGO_DB_NAME = "imdb_flat"
