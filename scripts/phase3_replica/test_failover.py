@@ -10,7 +10,6 @@ DB_NAME = "test_failover"
 def monitor_replication():
     print("Connexion au cluster rs0 en cours...")
 
-    # On definit un timeout court (2s) pour detecter rapidement une indisponibilite
     client = pymongo.MongoClient(URI, serverSelectionTimeoutMS=2000)
     db = client[DB_NAME]
     coll = db["ping"]
