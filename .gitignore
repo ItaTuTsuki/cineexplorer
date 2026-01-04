@@ -4,7 +4,7 @@ __pycache__/
 venv/
 .env
 
-# Données (Ne jamais envoyer sur GitHub !)
+# Données
 data/csv/*.csv
 data/csv/*.zip
 data/imdb.db
